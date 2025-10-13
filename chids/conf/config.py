@@ -10,8 +10,8 @@ SEQUENCE_DURATION = '1s'
 
 # LEARNING
 EPOCH = 120
-OPTIMIZER = 'Adam'
-LOSS_FUNC = 'mse'
+OPTIMIZER = 'adam'
+LOSS_FUNC = 'mean_squared_error'
 BATCH_SIZE = 50
 VALIDATION_SPLIT = 0.2
 ACTIVATION = 'sigmoid'
