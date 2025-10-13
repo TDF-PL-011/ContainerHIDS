@@ -4,7 +4,7 @@ import pandas as pd
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from keras.layers import Input, Dense
 from keras.models import Model
-from keras import regularizers
+from keras import losses, optimizers, regularizers
 from chids.shared.misc import _format_input
 from chids.conf.config import *
 from chids.shared.constants import *
@@ -46,7 +46,9 @@ class Training:
         formatted_anomaly_vectors = _format_input(self.anomaly_vectors)
         training_anomaly_vectors = formatted_anomaly_vectors.reshape(formatted_anomaly_vectors.shape[0], 1, formatted_anomaly_vectors.shape[1])
         model = self._autoencoder_model(training_anomaly_vectors)
-        model.compile(optimizer=OPTIMIZER, loss=LOSS_FUNC)
+        optimizer = optimizers.get(OPTIMIZER)
+        loss = losses.get(LOSS_FUNC)
+        model.compile(optimizer=optimizer, loss=loss)
         model.fit(training_anomaly_vectors, training_anomaly_vectors, epochs=EPOCH, batch_size=BATCH_SIZE, validation_split=VALIDATION_SPLIT, verbose=VERBOSE)
         thresh_list = self._get_thresholds_list(model, training_anomaly_vectors)
         return thresh_list, model

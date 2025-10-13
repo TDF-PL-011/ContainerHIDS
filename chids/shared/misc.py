@@ -25,7 +25,7 @@ def save_file(training_elements, model, output_folder):
         if not Path(path).is_dir():
             os.mkdir(os.getcwd() + "/" + output_folder)
 
-        model.save(path+'/'+'model.h5')
+        model.save(path + '/' + 'model.keras')
         console.print('model' + ' -------->  saved successfully in {}'.format(output_folder), style='green bold')
 
         for _, ele in enumerate(training_elements):
