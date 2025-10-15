@@ -55,3 +55,6 @@ TRAINING_INITIALIZER = 'CHIDS is generating the required training elements for y
 TRAINING_HEADERS = '------------ Training Summary ----------'
 
 STYLE = "green bold"
+
+INFERENCE_INITIALIZER = 'CHIDS is running inference on the provided scaps. Please wait!!!!!'
+INFERENCE_HEADER = '------------ Inference Summary ----------'
