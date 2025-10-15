@@ -1,3 +1,5 @@
+import os
+
 from baseline import Baseline
 import typer
 from rich import print
@@ -33,6 +35,30 @@ def evaluate(seen_syscalls: str = typer.Option(..., "--ss"), seen_args:str  = ty
 
     _print_results(detection_rate, false_positive_rate)
 
+
+@app.command()
+def infere(scaps_dir: str = typer.Option(..., "--id"), seen_syscalls: str = typer.Option(..., "--ss"),
+           seen_args: str = typer.Option(..., "--sa"), freq_max: str = typer.Option(..., "--fm"),
+           trained_model: str = typer.Option(..., "--tm"), thresh_list: str = typer.Option(..., "--tl")):
+    console.print(INFERENCE_INITIALIZER, style=STYLE, soft_wrap=False)
+
+    seen_syscalls_data = load_pickled_file(seen_syscalls)
+    seen_args_data = load_pickled_file(seen_args)
+    freq_max_data = load_pickled_file(freq_max)
+    thresh_list_data = load_pickled_file(thresh_list)
+
+    scaps = prepare_scaps(scaps_dir)
+    if not scaps:
+        console.print(f"No scaps found in {scaps_dir}.", style="red")
+        return
+
+    baseline_obj = Baseline(scaps)
+    scaps_dfs = baseline_obj._scaps_to_dfs()
+    traces = baseline_obj._get_scaps_traces(scaps_dfs)
+    scaps_anomaly_vectors = AnomalyVector(traces, seen_syscalls_data, seen_args_data, freq_max_data).get_anomaly_vectors()
+    results = Testing(trained_model, thresh_list_data).get_classifications(scaps_anomaly_vectors)
+
+    _print_inference_results(scaps, thresh_list_data, results)
 
 
 @app.command()
@@ -81,7 +107,23 @@ def _print_results(detection_rate, false_positive_rate):
     print(output_table)
 
 
+def _print_inference_results(scaps, thresholds, results):
+    output_table = Table(title=INFERENCE_HEADER)
+    output_table.add_column("Scap", style="magenta")
 
+    for threshold in thresholds:
+        if isinstance(threshold, (int, float)):
+            header_label = f"Theta {threshold:.2f}"
+        else:
+            header_label = f"Theta {threshold}"
+        output_table.add_column(header_label, style="magenta")
+
+    for scap_path, scap_results in zip(scaps, results):
+        scap_name = os.path.basename(scap_path)
+        formatted_results = ["Anomaly" if is_anomaly else "Normal" for is_anomaly in scap_results]
+        output_table.add_row(scap_name, *formatted_results)
+
+    print(output_table)
 
 
 if __name__== "__main__" :
