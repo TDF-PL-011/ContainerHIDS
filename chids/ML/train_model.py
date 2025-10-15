@@ -8,6 +8,8 @@ from keras import losses, optimizers, regularizers
 from chids.shared.misc import _format_input
 from chids.conf.config import *
 from chids.shared.constants import *
+import random
+import tensorflow as tf
 
 
 class Training:
@@ -43,6 +45,12 @@ class Training:
         return thresh_list
 
     def train_model(self):
+        # Set seeds for reproducibility (choose a fixed integer, e.g., 42)
+        seed = 0
+        np.random.seed(seed)
+        tf.random.set_seed(seed)
+        random.seed(seed)
+
         formatted_anomaly_vectors = _format_input(self.anomaly_vectors)
         training_anomaly_vectors = formatted_anomaly_vectors.reshape(formatted_anomaly_vectors.shape[0], 1, formatted_anomaly_vectors.shape[1])
         model = self._autoencoder_model(training_anomaly_vectors)
@@ -52,14 +60,3 @@ class Training:
         model.fit(training_anomaly_vectors, training_anomaly_vectors, epochs=EPOCH, batch_size=BATCH_SIZE, validation_split=VALIDATION_SPLIT, verbose=VERBOSE)
         thresh_list = self._get_thresholds_list(model, training_anomaly_vectors)
         return thresh_list, model
-
-
-
-
-
-
-
-
-
-
-
