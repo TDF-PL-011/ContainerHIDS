@@ -113,7 +113,7 @@ def _print_inference_results(scaps, thresholds, results):
 
     for threshold in thresholds:
         if isinstance(threshold, (int, float)):
-            header_label = f"Theta {threshold:.2f}"
+            header_label = f"Theta {threshold:.4f}"
         else:
             header_label = f"Theta {threshold}"
         output_table.add_column(header_label, style="magenta")

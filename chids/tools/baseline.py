@@ -47,6 +47,7 @@ class Baseline:
 
     def get_training_elements(self):
         scaps_dfs = self._scaps_to_dfs()
+
         seen_syscalls = self._seen_syscalls(scaps_dfs)
         seen_args = self._seen_args(scaps_dfs)
         traces = self._get_scaps_traces(scaps_dfs)
