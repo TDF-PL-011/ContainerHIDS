@@ -12,6 +12,7 @@ from chids.shared.constants import *
 import random
 import tensorflow as tf
 import keras
+from tensorflow.keras import layers as L, regularizers as R
 
 
 class Training:
@@ -20,31 +21,22 @@ class Training:
         self.anomaly_vectors = anomaly_vectors
 
     def _autoencoder_model(self, vectors):
-        inputs = Input(shape=(vectors.shape[1], vectors.shape[2]))
+        T, F = vectors.shape[1], vectors.shape[2]
+        inputs = L.Input(shape=(T, F))
+        x = L.Conv1D(64, 3, padding="causal")(inputs)
+        x = L.ReLU()(x)
+        x = L.Conv1D(64, 3, dilation_rate=2, padding="causal")(x)
+        x = L.ReLU()(x)
+        x = L.Conv1D(BOTTLENECK, 3, dilation_rate=4, padding="causal")(x)
+        z = L.GlobalAveragePooling1D()(x)
 
-        # Enhanced encoder with batch normalization and LeakyReLU
-        L1 = Dense(ENCODING_DIM * 2, activation="linear")(inputs)
-        L1 = keras.layers.LeakyReLU(alpha=0.1)(L1)
-        L1 = keras.layers.BatchNormalization()(L1)
-        L1 = keras.layers.Dropout(0.2)(L1)
+        x = L.RepeatVector(T)(z)
+        x = L.Conv1DTranspose(64, 3, padding="same")(x)
+        x = L.ReLU()(x)
+        x = L.Conv1DTranspose(64, 3, padding="same")(x)
+        outputs = L.TimeDistributed(L.Dense(F, activation="linear"))(x)
 
-        L2 = Dense(ENCODING_DIM, activity_regularizer=regularizers.l1(REG_RATE))(L1)
-        L2 = keras.layers.LeakyReLU(alpha=0.1)(L2)
-        L2 = keras.layers.BatchNormalization()(L2)
-
-        L3 = Dense(BOTTLENECK)(L2)
-        L3 = keras.layers.LeakyReLU(alpha=0.1)(L3)
-
-        # Enhanced decoder
-        L4 = Dense(ENCODING_DIM)(L3)
-        L4 = keras.layers.LeakyReLU(alpha=0.1)(L4)
-        L4 = keras.layers.BatchNormalization()(L4)
-
-        L5 = Dense(ENCODING_DIM * 2)(L4)
-        L5 = keras.layers.LeakyReLU(alpha=0.1)(L5)
-
-        output = Dense(vectors.shape[2], activation=ACTIVATION)(L5)
-        model = Model(inputs=inputs, outputs=output)
+        model = tf.keras.Model(inputs, outputs)
         return model
 
     def _get_thresholds_list(self, model, inp):
