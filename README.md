@@ -170,3 +170,36 @@ $> python3 main.py evaluate --ss output_dir/seen_syscalls.pkl --sa output_dir/se
         model = tf.keras.Model(inputs, outputs)
         return model
 ```
+
+### Mixed CNN and LSTM
+
+```
+    def _autoencoder_model(self, vectors):
+        timesteps = vectors.shape[1]
+        features = vectors.shape[2]
+        
+        inputs = Input(shape=(timesteps, features))
+        
+        # CNN branch for local patterns - NO pooling to keep sequence length
+        cnn_branch = Conv1D(64, 3, activation='relu', padding='same')(inputs)
+        cnn_branch = Conv1D(32, 3, activation='relu', padding='same')(cnn_branch)
+        
+        # LSTM branch for temporal patterns
+        lstm_branch = LSTM(64, return_sequences=True)(inputs)
+        lstm_branch = LSTM(32, return_sequences=True)(lstm_branch)
+        
+        # Combine branches - now both have shape (None, timesteps, 32)
+        combined = Concatenate(axis=-1)([cnn_branch, lstm_branch])  # Shape: (None, timesteps, 64)
+        
+        # Bottleneck
+        encoded = LSTM(BOTTLENECK)(combined)  # Shape: (None, BOTTLENECK)
+        
+        # Decoder
+        decoded = RepeatVector(timesteps)(encoded)  # Shape: (None, timesteps, BOTTLENECK)
+        decoded = LSTM(64, return_sequences=True)(decoded)
+        decoded = LSTM(128, return_sequences=True)(decoded)
+        outputs = TimeDistributed(Dense(features))(decoded)  # Shape: (None, timesteps, features)
+        
+        model = Model(inputs=inputs, outputs=outputs)
+        return model
+```
