@@ -5,6 +5,7 @@ import typer
 from rich import print
 from rich.table import Table
 from rich.console import Console
+import pandas as pd
 
 from chids.conf.config import *
 from chids.shared.constants import *
@@ -110,20 +111,32 @@ def _print_results(detection_rate, false_positive_rate):
 def _print_inference_results(scaps, thresholds, results):
     output_table = Table(title=INFERENCE_HEADER)
     output_table.add_column("Scap", style="magenta")
+    threshold_headers = []
 
     for threshold in thresholds:
         if isinstance(threshold, (int, float)):
             header_label = f"Theta {threshold:.2f}"
         else:
             header_label = f"Theta {threshold}"
+        threshold_headers.append(header_label)
         output_table.add_column(header_label, style="magenta")
 
+    csv_rows = []
     for scap_path, scap_results in zip(scaps, results):
         scap_name = os.path.basename(scap_path)
         formatted_results = ["Anomaly" if is_anomaly else "Normal" for is_anomaly in scap_results]
+        csv_rows.append(
+            {"Scap": scap_name, **dict(zip(threshold_headers, formatted_results))}
+        )
         output_table.add_row(scap_name, *formatted_results)
 
     print(output_table)
+
+    if csv_rows:
+        df = pd.DataFrame(csv_rows)
+        csv_path = os.path.join(os.getcwd(), "inference_results.csv")
+        df.to_csv(csv_path, index=False)
+        console.print(f"Inference results saved to {csv_path}", style=STYLE)
 
 
 if __name__== "__main__" :
